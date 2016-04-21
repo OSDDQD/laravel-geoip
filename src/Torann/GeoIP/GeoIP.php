@@ -9,16 +9,8 @@ use Monolog\Handler\StreamHandler;
 use GeoIp2\Exception\AddressNotFoundException;
 
 use Illuminate\Config\Repository;
-use Illuminate\Session\Store as SessionStore;
 
 class GeoIP {
-
-	/**
-	 * The session store.
-	 *
-	 * @var \Illuminate\Session\Store
-	 */
-	protected $session;
 
 	/**
 	 * Illuminate config repository instance.
@@ -80,12 +72,10 @@ class GeoIP {
 	 * Create a new GeoIP instance.
 	 *
 	 * @param  \Illuminate\Config\Repository  $config
-	 * @param  \Illuminate\Session\Store      $session
 	 */
-	public function __construct(Repository $config, SessionStore $session)
+	public function __construct(Repository $config)
 	{
 		$this->config  = $config;
-		$this->session = $session;
 
 		// Set custom default location
 		$this->default_location = array_merge(
@@ -95,16 +85,6 @@ class GeoIP {
 
 		// Set IP
 		$this->remote_ip = $this->default_location['ip'] = $this->getClientIP();
-	}
-
-	/**
-	 * Save location data in the session.
-	 *
-	 * @return void
-	 */
-	function saveLocation()
-	{
-		$this->session->set('geoip-location', $this->location);
 	}
 
 	/**
@@ -118,11 +98,6 @@ class GeoIP {
 		// Get location data
 		$this->location = $this->find($ip);
 
-		// Save user's location
-		if ($ip === null) {
-			$this->saveLocation();
-		}
-
 		return $this->location;
 	}
 
@@ -135,11 +110,6 @@ class GeoIP {
 	 */
 	private function find($ip = null)
 	{
-		// Check Session
-		if ($ip === null && $position = $this->session->get('geoip-location')) {
-			return $position;
-		}
-
 		// If IP not set, user remote IP
 		if ($ip === null) {
 			$ip = $this->remote_ip;
